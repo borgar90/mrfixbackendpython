@@ -1,0 +1,21 @@
+# Ignorer virtuelle miljø‐mapper
+venv/
+__pycache__/
+
+# Ignorer IDE‐spesifikke filer
+.vscode/
+.idea/
+
+# Ignorer loggfiler, midlertidige filer osv.
+*.log
+*.tmp
+
+# Ignorer database‐filer
+*.sqlite3
+
+# Ignorer OS‐filer
+.DS_Store
+Thumbs.db
+
+# Ignorer hemmelige filer som miljøvariabler
+.env
