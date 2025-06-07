@@ -38,7 +38,6 @@ A FastAPI-based e-commerce backend featuring:
 3. Install dependencies:
    ```powershell
    pip install -r requirements.txt
-   pip install python-jose passlib[bcrypt]
    ```
 4. Configure environment variables in `.env`:
    ```properties

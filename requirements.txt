@@ -5,3 +5,5 @@ pydantic
 PyMySQL
 python-dotenv
 requests
+python-jose 
+passlib[bcrypt]

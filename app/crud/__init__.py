@@ -6,19 +6,9 @@ from app import models
 # Re-eksporter alle CRUD-funksjonene under crud.* slik at 
 # e.g. crud.get_customer, crud.update_customer osv. eksisterer
 
-from .customers import (
-    get_customer,
-    get_customers,
-    create_customer,
-    update_customer,
-    delete_customer,
-)
-from .products import (
-    get_product,
-    get_products,
-    create_product,
-    update_product,
-    delete_product,
+from .crm import (
+    create_crm_note,
+    get_notes_for_customer,
 )
 from .orders import (
     create_order,
@@ -27,7 +17,26 @@ from .orders import (
     update_order_status,
     delete_order,
 )
-from .crm import (
-    create_crm_note,
-    get_notes_for_customer,
+from .products import (
+    get_product,
+    get_products,
+    create_product,
+    update_product,
+    delete_product,
+    adjust_product_stock,
+)
+from .customers import (
+    get_customer,
+    get_customers,
+    create_customer,
+    update_customer,
+    delete_customer,
+)
+from .users import (
+    get_user_by_email,
+    create_user,
+    get_users,
+    update_user,
+    delete_user,
+    get_user  # expose get_user by id
 )

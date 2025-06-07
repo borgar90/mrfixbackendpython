@@ -4,11 +4,16 @@ from sqlalchemy.orm import Session
 from typing import List
 from .. import models, schemas
 from sqlalchemy.exc import SQLAlchemyError
+from ..schemas import OrderStatus  # import enum
 
 def create_order(db: Session, order_in: schemas.OrderCreate) -> models.Order:
     """
     Opprett en ny ordre, inkludert ordrelinjer og oppdatering av lagerbeholdning.
     """
+    # Ensure the customer exists
+    customer = db.query(models.Customer).filter(models.Customer.id == order_in.customer_id).first()
+    if not customer:
+        raise ValueError(f"Customer with id {order_in.customer_id} not found")
     # Kalkuler totalbeløp basert på produktpriser og antall
     total = 0.0
     items_data = []
@@ -25,7 +30,7 @@ def create_order(db: Session, order_in: schemas.OrderCreate) -> models.Order:
     db_order = models.Order(
         customer_id=order_in.customer_id,
         total_amount=total,
-        status="pending"
+        status=OrderStatus.pending.value  # default pending
     )
     db.add(db_order)
     db.flush()  # tvinger SQLAlchemy til å gi db_order en ID uten commit
@@ -61,9 +66,14 @@ def update_order_status(db: Session, order_id: int, status: str) -> models.Order
     """
     Oppdater status for en eksisterende ordre.
     """
+    # Validate status value
+    try:
+        status_enum = OrderStatus(status)
+    except ValueError:
+        raise ValueError(f"Invalid status '{status}'")
     db_order = get_order(db, order_id)
     if db_order:
-        db_order.status = status
+        db_order.status = status_enum.value
         db.commit()
         db.refresh(db_order)
     return db_order
@@ -74,7 +84,12 @@ def delete_order(db: Session, order_id: int) -> None:
     """
     db_order = get_order(db, order_id)
     if db_order:
-        # First delete associated order items to satisfy NOT NULL constraints
-        db.query(models.OrderItem).filter(models.OrderItem.order_id == order_id).delete()
+        # Restore product stock before deleting order items
+        for item in db_order.items:
+            if item.product:
+                item.product.stock += item.quantity
+        # Delete order items (disable session synchronization to avoid SAWarning)
+        db.query(models.OrderItem).filter(models.OrderItem.order_id == order_id).delete(synchronize_session=False)
+        # Delete the order itself
         db.delete(db_order)
         db.commit()

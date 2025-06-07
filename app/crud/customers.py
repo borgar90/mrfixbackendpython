@@ -1,8 +1,11 @@
 # app/crud/customers.py
 
+import uuid
 from sqlalchemy.orm import Session
 from typing import List
 from .. import models, schemas
+from .users import create_user as create_user_crud
+from ..schemas import UserCreate, UserRole
 
 def get_customer(db: Session, customer_id: int) -> models.Customer:
     """
@@ -18,9 +21,21 @@ def get_customers(db: Session, skip: int = 0, limit: int = 100) -> List[models.C
 
 def create_customer(db: Session, customer: schemas.CustomerCreate) -> models.Customer:
     """
-    Opprett en ny kunde i databasen.
+    Opprett en ny kunde i databasen. Hvis user_id ikke oppgitt, opprett en tilhørende User.
     """
+    # Ensure linked user exists or create new one
+    if customer.user_id:
+        user_id = customer.user_id
+    else:
+        # Create a new auth User for this customer
+        # Use temporary random password
+        temp_pw = uuid.uuid4().hex
+        user_in = UserCreate(email=customer.email, password=temp_pw, role=UserRole.customer)
+        db_user = create_user_crud(db, user_in)
+        user_id = db_user.id
+    # Create Customer record linked to user_id
     db_customer = models.Customer(
+        user_id=user_id,
         first_name=customer.first_name,
         last_name=customer.last_name,
         email=customer.email,

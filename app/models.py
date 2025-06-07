@@ -3,9 +3,21 @@ from sqlalchemy.orm import relationship
 from datetime import datetime, timezone  # include timezone
 from .database import Base
 
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    role = Column(String(50), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    # One-to-one link to customer profile
+    customer = relationship("Customer", back_populates="user", uselist=False)
+
 class Customer(Base):
     __tablename__ = "customers"
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user = relationship("User", back_populates="customer")
     first_name = Column(String(100), nullable=False, index=True)
     last_name = Column(String(100), nullable=False, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
@@ -59,3 +71,4 @@ class OrderItem(Base):
     price = Column(Float, nullable=False)
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
+    __mapper_args__ = {"confirm_deleted_rows": False}

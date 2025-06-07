@@ -52,3 +52,18 @@ def delete_product(db: Session, product_id: int) -> None:
     if db_product:
         db.delete(db_product)
         db.commit()
+
+def adjust_product_stock(db: Session, product_id: int, quantity: int) -> models.Product:
+    """
+    Adjust the stock of a product by a given quantity (positive to add, negative to remove).
+    """
+    db_product = get_product(db, product_id)
+    if not db_product:
+        return None
+    new_stock = db_product.stock + quantity
+    if new_stock < 0:
+        raise ValueError(f"Stock cannot be negative; attempted adjustment {quantity}")
+    db_product.stock = new_stock
+    db.commit()
+    db.refresh(db_product)
+    return db_product

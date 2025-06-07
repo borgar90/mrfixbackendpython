@@ -47,11 +47,11 @@ Base.metadata.create_all(bind=engine_test)
 # Override dependency i FastAPI (get_db) med vår override_get_db
 fastapi_app.dependency_overrides[get_db] = override_get_db
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def client():
     """
     TestClient–fixture for å sende HTTP-forespørsler til FastAPI-appen.
-    Scope 'module' slik at vi gjenbruker client for alle tester i hver fil.
+    Scope 'session' slik at vi gjenbruker client for alle tester i hele testkjøringen.
     """
     with TestClient(fastapi_app) as test_client:
         yield test_client
@@ -62,3 +62,39 @@ def reset_database():
     Base.metadata.drop_all(bind=engine_test)
     Base.metadata.create_all(bind=engine_test)
     yield
+
+@pytest.fixture(scope="session")
+def admin_token(client):
+    # Obtain JWT for admin user
+    data = {"username": "admin", "password": "adminpass"}
+    response = client.post(
+        "/token",
+        data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+    assert response.status_code == 200
+    return response.json()["access_token"]
+
+@pytest.fixture(scope="session")
+def admin_headers(admin_token):
+    return {"Authorization": f"Bearer {admin_token}"}
+
+@pytest.fixture(scope="session")
+def user_token(client):
+    # Register a test customer user
+    payload = {"email": "cust@example.com", "password": "custpass", "role": "customer"}
+    resp = client.post("/users/", json=payload)
+    assert resp.status_code == 201
+    # Login
+    data = {"username": payload["email"], "password": payload["password"]}
+    response = client.post(
+        "/token",
+        data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+    assert response.status_code == 200
+    return response.json()["access_token"]
+
+@pytest.fixture(scope="session")
+def user_headers(user_token):
+    return {"Authorization": f"Bearer {user_token}"}

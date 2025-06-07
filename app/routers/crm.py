@@ -5,13 +5,14 @@ from sqlalchemy.orm import Session
 from typing import List
 from .. import crud, schemas
 from ..database import get_db
+from ..auth import get_current_user
 
 router = APIRouter(
     prefix="/crm",
     tags=["crm"]
 )
 
-@router.post("/notes", response_model=schemas.CRMNoteRead, status_code=201)
+@router.post("/notes", response_model=schemas.CRMNoteRead, status_code=201, dependencies=[Depends(get_current_user)])
 def create_note(note_in: schemas.CRMNoteCreate, db: Session = Depends(get_db)):
     """
     Opprett et CRM-notat for en kunde.
@@ -23,7 +24,7 @@ def create_note(note_in: schemas.CRMNoteCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Customer not found")
     return crud.create_crm_note(db, note_in)
 
-@router.get("/notes/{customer_id}", response_model=List[schemas.CRMNoteRead])
+@router.get("/notes/{customer_id}", response_model=List[schemas.CRMNoteRead], dependencies=[Depends(get_current_user)])
 def read_notes(customer_id: int, db: Session = Depends(get_db)):
     """
     Hent alle CRM-notater for en gitt kunde.

@@ -2,7 +2,7 @@
 
 import pytest
 
-def create_test_customer(client):
+def create_test_customer(client, headers):
     """
     Hjelpefunksjon: opprett en dummy-kunde og returner ID.
     """
@@ -11,30 +11,30 @@ def create_test_customer(client):
         "last_name": "Kunde",
         "email": "crm.kunde@example.com"
     }
-    response = client.post("/customers", json=payload)
+    response = client.post("/customers/", json=payload, headers=headers)
     assert response.status_code == 201
     return response.json()["id"]
 
-def test_create_crm_note_and_read(client):
+def test_create_crm_note_and_read(client, admin_headers, user_headers):
     """
     Test at vi kan opprette et CRM-notat og hente det via GET /crm/notes/{customer_id}
     """
     # Opprett kunde
-    customer_id = create_test_customer(client)
+    customer_id = create_test_customer(client, admin_headers)
 
     # Opprett CRM-notat
     note_payload = {
         "customer_id": customer_id,
         "note": "Dette er et testnotat for CRM."
     }
-    response = client.post("/crm/notes", json=note_payload)
+    response = client.post("/crm/notes", json=note_payload, headers=user_headers)
     assert response.status_code == 201
     crm_data = response.json()
     assert crm_data["customer_id"] == customer_id
     assert "id" in crm_data
 
     # Hent alle notater for kunden
-    response_get = client.get(f"/crm/notes/{customer_id}")
+    response_get = client.get(f"/crm/notes/{customer_id}", headers=user_headers)
     assert response_get.status_code == 200
     notes = response_get.json()
     assert isinstance(notes, list)

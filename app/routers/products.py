@@ -53,3 +53,16 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     """
     crud.delete_product(db, product_id)
     return
+
+@router.post("/{product_id}/stock", response_model=schemas.ProductRead, dependencies=[Depends(get_current_admin)])
+def adjust_stock(product_id: int, stock_update: schemas.StockUpdate, db: Session = Depends(get_db)):
+    """
+    Juster lagerbeholdning for et produkt (positivt for påfyll, negativt for uttak).
+    """
+    try:
+        updated = crud.adjust_product_stock(db, product_id, stock_update.quantity)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not updated:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return updated

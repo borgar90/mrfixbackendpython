@@ -4,7 +4,7 @@ import pytest
 import uuid  # for unique emails
 
 # Helper to create a customer and return its ID and payload
-def create_customer(client, payload=None):
+def create_customer(client, headers, payload=None):
     if payload is None:
         payload = {
             "first_name": "Ola",
@@ -16,14 +16,14 @@ def create_customer(client, payload=None):
             "postal_code": "0001",
             "country": "Norge"
         }
-    response = client.post("/customers", json=payload)
+    response = client.post("/customers/", json=payload, headers=headers)
     assert response.status_code == 201
     return response.json()["id"], payload
 
 
-def test_create_customer(client):
-    customer_id, payload = create_customer(client)
-    response = client.get(f"/customers/{customer_id}")
+def test_create_customer(client, admin_headers):
+    customer_id, payload = create_customer(client, admin_headers)
+    response = client.get(f"/customers/{customer_id}", headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == customer_id
@@ -31,18 +31,18 @@ def test_create_customer(client):
     assert data["email"] == payload["email"]
 
 
-def test_read_customer(client):
+def test_read_customer(client, admin_headers):
     # Each test creates its own customer
-    customer_id, payload = create_customer(client)
-    response = client.get(f"/customers/{customer_id}")
+    customer_id, payload = create_customer(client, admin_headers)
+    response = client.get(f"/customers/{customer_id}", headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == customer_id
     assert data["email"] == payload["email"]
 
 
-def test_update_customer(client):
-    customer_id, _ = create_customer(client)
+def test_update_customer(client, admin_headers):
+    customer_id, _ = create_customer(client, admin_headers)
     update_payload = {
         "first_name": "Ole",
         "last_name": "Nordmann",
@@ -53,7 +53,7 @@ def test_update_customer(client):
         "postal_code": "5003",
         "country": "Norge"
     }
-    response = client.put(f"/customers/{customer_id}", json=update_payload)
+    response = client.put(f"/customers/{customer_id}", json=update_payload, headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == customer_id
@@ -61,10 +61,10 @@ def test_update_customer(client):
     assert data["email"] == "ole.nordmann@example.com"
 
 
-def test_delete_customer(client):
-    customer_id, _ = create_customer(client)
-    response = client.delete(f"/customers/{customer_id}")
+def test_delete_customer(client, admin_headers):
+    customer_id, _ = create_customer(client, admin_headers)
+    response = client.delete(f"/customers/{customer_id}", headers=admin_headers)
     assert response.status_code == 204
     # Bekreft at kunden er borte
-    response = client.get(f"/customers/{customer_id}")
+    response = client.get(f"/customers/{customer_id}", headers=admin_headers)
     assert response.status_code == 404

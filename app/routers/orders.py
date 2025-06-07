@@ -39,7 +39,7 @@ def create_order(order_in: schemas.OrderCreate, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.put("/{order_id}/status", response_model=schemas.OrderRead)
+@router.put("/{order_id}/status", response_model=schemas.OrderRead, dependencies=[Depends(get_current_admin)])
 def update_order_status(order_id: int, status: str, db: Session = Depends(get_db)):
     """
     Oppdater status for en eksisterende ordre.

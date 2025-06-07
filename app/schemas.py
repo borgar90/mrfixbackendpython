@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr, ConfigDict  # add ConfigDict import
+from enum import Enum  # new import
 
 # ==========================
 # CRM-schemas
@@ -34,7 +35,7 @@ class CustomerBase(BaseModel):
 
 
 class CustomerCreate(CustomerBase):
-    pass
+    user_id: Optional[int] = None  # link to authentication user; auto-created if not provided
 
 
 class CustomerRead(CustomerBase):
@@ -87,8 +88,16 @@ class OrderItemRead(OrderItemBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class OrderStatus(str, Enum):  # new enum
+    pending = "pending"
+    paid = "paid"
+    shipped = "shipped"
+    canceled = "canceled"
+    refunded = "refunded"
+
+
 class OrderBase(BaseModel):
-    customer_id: Optional[int] = None
+    customer_id: int  # customer is required for every order
 
 
 class OrderCreate(OrderBase):
@@ -98,7 +107,7 @@ class OrderCreate(OrderBase):
 class OrderRead(OrderBase):
     id: int
     total_amount: float
-    status: str
+    status: OrderStatus  # constrained to valid statuses
     created_at: datetime
     items: List[OrderItemRead]
 
@@ -116,3 +125,58 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: Optional[str] = None
     role: Optional[str] = None
+
+
+# ==========================
+# User roles
+# ==========================
+class UserRole(str, Enum):
+    admin = "admin"
+    customer = "customer"
+
+
+# ==========================
+# User schemas
+# ==========================
+class UserBase(BaseModel):
+    email: EmailStr
+    role: UserRole  # role must be either 'admin' or 'customer'
+
+
+class UserCreate(UserBase):
+    password: str
+
+
+class UserRead(UserBase):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
+# Statistics schemas
+# ==========================
+class MonthlySales(BaseModel):
+    month: int
+    total: float
+
+
+class UnprocessedOrder(  # for clarity, reuse OrderRead schema for full order data
+    BaseModel
+):
+    id: int
+    customer_id: int
+    total_amount: float
+    status: OrderStatus
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StockUpdate(BaseModel):
+    """
+    Model for adjusting product stock (positive or negative quantity).
+    """
+
+    quantity: int
