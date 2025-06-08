@@ -63,6 +63,7 @@ class ProductCreate(ProductBase):
 
 class ProductRead(ProductBase):
     id: int
+    thumbnail_url: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -182,22 +183,51 @@ class StockUpdate(BaseModel):
     quantity: int
 
 
+class CountResponse(BaseModel):
+    count: int
+
+
+class RevenueResponse(BaseModel):
+    total: float
+
+
 # ==========================
-# Payment schemas
+# Product Image schemas
 # ==========================
+class ProductImageBase(BaseModel):
+    url: str
+    is_main: Optional[bool] = False
+    is_thumbnail: Optional[bool] = False
+
+
+class ProductImageCreate(ProductImageBase):
+    pass
+
+
+class ProductImageRead(ProductImageBase):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProductImageUpdate(BaseModel):
+    is_main: Optional[bool]
+    is_thumbnail: Optional[bool]
+
+
+# ==========================
+# Vipps payment schemas
+# ==========================
+
 class VippsPaymentRequest(BaseModel):
     callback_url: str
 
 
 class VippsPaymentResponse(BaseModel):
-    # raw response from Vipps
     data: Dict[str, Any]
 
 
-# ==========================
-# Vipps callback schema
-# ==========================
 class VippsCallback(BaseModel):
-    paymentId: str
-    transactionStatus: str  # e.g., 'AUTHORIZED', 'SETTLED', 'REJECTED'
-    model_config = ConfigDict(from_attributes=False)
+    transactionStatus: str
+    orderId: Optional[str] = None

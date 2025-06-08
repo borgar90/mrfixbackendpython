@@ -24,6 +24,11 @@ from .products import (
     update_product,
     delete_product,
     adjust_product_stock,
+    get_product_image,
+    get_product_images,
+    create_product_image,
+    update_product_image,
+    delete_product_image,
 )
 from .customers import (
     get_customer,

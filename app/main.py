@@ -13,6 +13,7 @@ from .models import User
 from .crud.users import pwd_context
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 # Lifespan context: create default admin on startup
 @asynccontextmanager
@@ -48,7 +49,7 @@ app = FastAPI(
 # Allow CORS for local frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # React dev servers
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,6 +62,13 @@ app.include_router(orders.router)
 app.include_router(crm.router)
 app.include_router(users.router)
 app.include_router(statistics.router)
+
+# Serve uploaded images
+app.mount(
+    "/static",
+    StaticFiles(directory="app/static"),
+    name="static"
+)
 
 @app.get("/")
 def root():

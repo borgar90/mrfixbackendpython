@@ -35,3 +35,40 @@ def get_unprocessed_orders(db: Session) -> List[models.Order]:
         .filter(models.Order.status == OrderStatus.pending.value)
         .all()
     )
+
+
+def get_total_users(db: Session) -> int:
+    """
+    Return total number of registered users.
+    """
+    return db.query(func.count(models.User.id)).scalar() or 0
+
+
+def get_paid_unprocessed_count(db: Session) -> int:
+    """
+    Return count of orders that are paid but not yet processed (if processing status differs, here we treat paid as unprocessed).
+    """
+    return (
+        db.query(func.count(models.Order.id))
+        .filter(models.Order.status == OrderStatus.paid.value)
+        .scalar() or 0
+    )
+
+
+def get_total_orders(db: Session) -> int:
+    """
+    Return total number of orders placed.
+    """
+    return db.query(func.count(models.Order.id)).scalar() or 0
+
+
+def get_total_revenue(db: Session) -> float:
+    """
+    Return total revenue of orders with status paid (excluding refunded).
+    """
+    total = (
+        db.query(func.coalesce(func.sum(models.Order.total_amount), 0.0))
+        .filter(models.Order.status == OrderStatus.paid.value)
+        .scalar()
+    )
+    return float(total)

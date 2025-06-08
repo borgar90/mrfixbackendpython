@@ -47,6 +47,25 @@ class Product(Base):
     stock = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     order_items = relationship("OrderItem", back_populates="product")
+    images = relationship(
+        "ProductImage",
+        back_populates="product",
+        cascade="all, delete-orphan"
+    )
+
+    @property
+    def thumbnail_url(self) -> str | None:
+        """
+        Return URL of the product's thumbnail image if set, else the first image or None.
+        """
+        # Return explicitly flagged thumbnail if available
+        for img in self.images:
+            if img.is_thumbnail:
+                return img.url
+        # Fallback: return first image if exists
+        if self.images:
+            return self.images[0].url
+        return None
 
 class Order(Base):
     __tablename__ = "orders"
@@ -72,3 +91,13 @@ class OrderItem(Base):
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
     __mapper_args__ = {"confirm_deleted_rows": False}
+
+class ProductImage(Base):
+    __tablename__ = "product_images"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    url = Column(String(500), nullable=False)
+    is_main = Column(Integer, default=0)  # 1 for main image
+    is_thumbnail = Column(Integer, default=0)  # 1 for thumbnail
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    product = relationship("Product", back_populates="images")
