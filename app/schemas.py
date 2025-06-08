@@ -1,7 +1,7 @@
 # app/schemas.py
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, EmailStr, ConfigDict  # add ConfigDict import
 from enum import Enum  # new import
 
@@ -180,3 +180,24 @@ class StockUpdate(BaseModel):
     """
 
     quantity: int
+
+
+# ==========================
+# Payment schemas
+# ==========================
+class VippsPaymentRequest(BaseModel):
+    callback_url: str
+
+
+class VippsPaymentResponse(BaseModel):
+    # raw response from Vipps
+    data: Dict[str, Any]
+
+
+# ==========================
+# Vipps callback schema
+# ==========================
+class VippsCallback(BaseModel):
+    paymentId: str
+    transactionStatus: str  # e.g., 'AUTHORIZED', 'SETTLED', 'REJECTED'
+    model_config = ConfigDict(from_attributes=False)

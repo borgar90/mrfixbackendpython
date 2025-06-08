@@ -51,6 +51,8 @@ Below is an overview of all available endpoints in the Webshop API, including HT
 | POST   | `/orders/`                       | Place a new order                   | Authenticated  |
 | PUT    | `/orders/{id}/status`            | Update order status                 | Admin only     |
 | DELETE | `/orders/{id}`                   | Delete order (restores stock)       | Admin only     |
+| POST   | `/orders/{order_id}/pay`             | Initiate Vipps payment for an order | Authenticated  |
+| POST   | `/orders/{order_id}/callback`        | Handle Vipps payment status callback | Public         |
 
 ## CRM Notes
 

@@ -12,6 +12,7 @@ import logging
 from .models import User
 from .crud.users import pwd_context
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 # Lifespan context: create default admin on startup
 @asynccontextmanager
@@ -42,6 +43,15 @@ app = FastAPI(
     description="API for webshop med CRM, Vipps og Bring-integrasjon",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# Allow CORS for local frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Inkluder alle routers
