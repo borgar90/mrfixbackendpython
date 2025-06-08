@@ -7,7 +7,7 @@ Husk å fylle ut miljøvariabler i .env og oppdatere URL-er om du går til produ
 
 import os
 import requests
-from typing import Dict
+from typing import Dict, Any
 
 VIPPS_CLIENT_ID = os.getenv("VIPPS_CLIENT_ID")
 VIPPS_CLIENT_SECRET = os.getenv("VIPPS_CLIENT_SECRET")
@@ -45,7 +45,7 @@ class VippsClient:
         else:
             raise Exception(f"Failed to authenticate with Vipps: {resp.text}")
 
-    def create_payment(self, order_id: int, amount: float, callback_url: str) -> Dict:
+    def create_payment(self, order_id: int, amount: float, callback_url: str, shipping: Dict[str, Any] = None) -> Dict:
         """
         Opprett en betalingsforespørsel i Vipps.
         - order_id: unik ID for ordren
@@ -60,6 +60,15 @@ class VippsClient:
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json"
         }
+        # Prepare customer info from shipping data if provided
+        customer_info = {}
+        if shipping:
+            customer_info["email"] = shipping.get("email")
+            if shipping.get("phone"):
+                customer_info["mobileNumber"] = shipping.get("phone")
+        # Fallback defaults if none provided
+        if not customer_info:
+            customer_info = {"mobileNumber": "47xxxxxxxx", "email": "customer@example.com"}
         body = {
             "merchantInfo": {
                 "merchantSerialNumber": "YOUR_MERCHANT_SERIAL_NUMBER",
@@ -69,13 +78,10 @@ class VippsClient:
                 "merchantName": "Din Webshop AS",
                 "paymentType": "eComm Express Payment"
             },
-            "customerInfo": {
-                "mobileNumber": "47xxxxxxxx",
-                "email": "customer@example.com"
-            },
+            "customerInfo": customer_info,
             "transaction": {
                 "orderId": str(order_id),
-                "amount": int(amount * 100),  # Vipps forventer øre
+                "amount": int(amount * 100),  # Vipps expects øre
                 "currency": "NOK",
                 "transactionText": f"Payment for order {order_id}"
             }

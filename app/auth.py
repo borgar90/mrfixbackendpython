@@ -63,8 +63,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         token_data = TokenData(username=username, role=role)
     except JWTError:
         raise credentials_exception
-    # Trust token data: return a User model instance based on JWT claims
-    return models.User(email=token_data.username, hashed_password="", role=token_data.role)
+    # Fetch user record from database (including default admin created at startup)
+    user = get_user_by_email(db, token_data.username)
+    if not user:
+        raise credentials_exception
+    return user
 
 
 def get_current_admin(current_user: models.User = Depends(get_current_user)):

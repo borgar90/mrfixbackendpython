@@ -36,8 +36,35 @@ async def lifespan(app: FastAPI):
     yield
 
 # Opprett alle tabeller basert på modeller
-# NB: I produksjon bør man bruke migrasjoner (f.eks. Alembic) i stedet for å kjøre create_all()
+# NB: I produksjon bør man bruke migrasjoner (f.eks. Alembic) i stedet av å kjøre create_all()
 Base.metadata.create_all(bind=engine)
+
+# In production DB, ensure `user_id` column exists in `customers` table (for shipping data link)
+from sqlalchemy import text
+if engine.dialect.name != 'sqlite':
+    from sqlalchemy import inspect
+    inspector = inspect(engine)
+    cols = [col['name'] for col in inspector.get_columns('customers')]
+    with engine.connect() as conn:
+        # Add user_id column if missing
+        if 'user_id' not in cols:
+            try:
+                conn.execute(text(
+                    "ALTER TABLE customers ADD COLUMN user_id INTEGER"
+                ))
+            except Exception:
+                pass
+        # Add foreign key constraint if missing
+        # Note: MySQL constraint names must be unique
+        # We'll add FK only if not present
+        fks = [fk['constrained_columns'][0] for fk in inspector.get_foreign_keys('customers')]
+        if 'user_id' not in fks:
+            try:
+                conn.execute(text(
+                    "ALTER TABLE customers ADD CONSTRAINT fk_customers_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+                ))
+            except Exception:
+                pass
 
 app = FastAPI(
     title="Webshop API",

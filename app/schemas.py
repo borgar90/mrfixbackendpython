@@ -137,6 +137,20 @@ class UserRole(str, Enum):
 
 
 # ==========================
+# Shipping Information schema
+# ==========================
+class ShippingInfo(BaseModel):
+    first_name: str
+    last_name: str
+    address: str
+    city: str
+    postal_code: str
+    country: str
+    email: EmailStr
+    phone: Optional[str] = None
+
+
+# ==========================
 # User schemas
 # ==========================
 class UserBase(BaseModel):
@@ -146,11 +160,15 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    # Optional initial shipping info for customer
+    shipping: Optional[ShippingInfo] = None
 
 
 class UserRead(UserBase):
     id: int
     created_at: datetime
+    # Include linked customer/shipping profile when available
+    customer: Optional[CustomerRead] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -222,6 +240,8 @@ class ProductImageUpdate(BaseModel):
 
 class VippsPaymentRequest(BaseModel):
     callback_url: str
+    # Shipping information required for unauthenticated payments
+    shipping: ShippingInfo
 
 
 class VippsPaymentResponse(BaseModel):

@@ -78,3 +78,30 @@ def test_delete_user(client, admin_headers):
     # Now fetching should 404
     response = client.get(f"/users/{user_id}", headers=admin_headers)
     assert response.status_code == 404
+
+def test_register_customer_with_shipping(client, admin_headers):
+    # Register customer with shipping info
+    payload = {
+        "email": "shiptest+test@example.com",
+        "password": "ship123",
+        "role": "customer",
+        "shipping": {
+            "first_name": "Ship",
+            "last_name": "Test",
+            "email": "shiptest+test@example.com",
+            "address": "1 Shipping Lane",
+            "city": "Testville",
+            "postal_code": "12345",
+            "country": "Norway",
+            "phone": "+4711122233"
+        }
+    }
+    # Create user
+    response = client.post("/users/", json=payload)
+    assert response.status_code == 201
+    user_id = response.json()["id"]
+    # Admin lists customers and should see this new customer
+    resp = client.get("/customers/", headers=admin_headers)
+    assert resp.status_code == 200
+    customers = resp.json()
+    assert any(c["email"] == payload["shipping"]["email"] for c in customers)

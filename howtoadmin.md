@@ -67,5 +67,29 @@ VALUES (
   ```
 - After insertion, issue the token via `/token` endpoint as described above.
 
+## MySQL Schema Migration for Shipping Data
+
+If you are using a MySQL database and have existing tables, you need to add the `user_id` column and foreign key to the `customers` table to support shipping data on user registration.
+
+Run the following SQL commands in your MySQL client:
+
+```sql
+ALTER TABLE customers
+  ADD COLUMN user_id INT NULL;
+
+ALTER TABLE customers
+  ADD CONSTRAINT fk_customers_user_id
+  FOREIGN KEY (user_id) REFERENCES users(id)
+  ON DELETE CASCADE;
+```
+
+After applying these, restart the FastAPI app. New users registered with shipping info will be linked correctly.
+
+If you prefer automatic migrations, consider integrating Alembic:
+1. `alembic init migrations`
+2. Configure `alembic.ini` and `env.py`.
+3. `alembic revision --autogenerate -m "Add user_id to customers"`
+4. `alembic upgrade head`
+
 ---
 _End of admin creation guide._

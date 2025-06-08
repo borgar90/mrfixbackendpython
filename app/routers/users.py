@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from typing import List
 from .. import crud, schemas
 from ..database import get_db
-from ..auth import get_current_admin
+from ..auth import get_current_admin, get_current_user
+from .. import models
 
 router = APIRouter(
     prefix="/users",
@@ -17,12 +18,41 @@ def create_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     existing = crud.get_user_by_email(db, user_in.email)
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return crud.create_user(db, user_in)
+    # Create the user
+    db_user = crud.create_user(db, user_in)
+    # If customer role and shipping data provided, create customer profile
+    if db_user.role == schemas.UserRole.customer.value and user_in.shipping:
+        shipping = user_in.shipping
+        cust_in = schemas.CustomerCreate(
+            user_id=db_user.id,
+            first_name=shipping.first_name,
+            last_name=shipping.last_name,
+            email=shipping.email,
+            phone=shipping.phone,
+            address=shipping.address,
+            city=shipping.city,
+            postal_code=shipping.postal_code,
+            country=shipping.country
+        )
+        crud.create_customer(db, cust_in)
+    return db_user
 
 @router.get("/", response_model=List[schemas.UserRead], dependencies=[Depends(get_current_admin)])
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Admin: list all users"""
     return crud.get_users(db, skip=skip, limit=limit)
+
+@router.get("/me", response_model=schemas.UserRead)
+def read_current_user(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Retrieve profile of the current authenticated user, including shipping/customer data"""
+    # Load fresh user with relationships
+    db_user = crud.get_user(db, current_user.id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return db_user
 
 @router.get("/{user_id}", response_model=schemas.UserRead, dependencies=[Depends(get_current_admin)])
 def read_user(user_id: int, db: Session = Depends(get_db)):

@@ -17,14 +17,34 @@ Below is an overview of all available endpoints in the Webshop API, including HT
 
 | Method | Path               | Description                        | Auth           |
 |--------|--------------------|------------------------------------|----------------|
-| POST   | `/users/`          | Register new user (admin or cust)  | Public         |
+| POST   | `/users/`          | Register new user (admin or cust); accept optional shipping data for customers | Public         |
 | GET    | `/users/`          | List all users                     | Admin only     |
+| GET    | `/users/me`        | Get profile of the current user    | Authenticated  |
 | GET    | `/users/{id}`      | Get user by ID                     | Admin only     |
 | PUT    | `/users/{id}`      | Update user                        | Admin only     |
 | DELETE | `/users/{id}`      | Delete user                        | Admin only     |
 
 ### User Endpoints Explained
-- **POST `/users/`**: Registers a new user (admin or customer). Expects JSON `{ email, password, role }`.
+- **POST `/users/`**: Registers a new user and optional customer shipping profile. Expects JSON:
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "secret",
+    "role": "customer",
+    "shipping": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john@example.com",
+      "address": "123 Main St",
+      "city": "Oslo",
+      "postal_code": "0123",
+      "country": "Norway",
+      "phone": "+4712345678"
+    }
+  }
+  ```
+  If `role` is `customer` and `shipping` is provided, creates a corresponding customer record.
+- **GET `/users/me`**: Retrieves the profile of the current authenticated user, including email and role (and shipping/customer profile if exists). Requires a valid JWT.
 - **GET `/users/`**: Returns a list of all user profiles. Admin-only access.
 - **GET `/users/{id}`**: Retrieves a specific user by ID. Admin-only.
 - **PUT `/users/{id}`**: Updates an existing user’s email, password, or role. Admin-only.
