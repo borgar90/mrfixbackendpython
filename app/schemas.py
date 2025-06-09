@@ -154,7 +154,7 @@ class ShippingInfo(BaseModel):
 # User schemas
 # ==========================
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str
     role: UserRole  # role must be either 'admin' or 'customer'
 
 
@@ -251,3 +251,28 @@ class VippsPaymentResponse(BaseModel):
 class VippsCallback(BaseModel):
     transactionStatus: str
     orderId: Optional[str] = None
+
+
+class VippsInitiateRequest(BaseModel):
+    order_id: int
+    callback_url: str
+    shipping: ShippingInfo
+
+
+# ==========================
+# Stripe payment schemas
+# ==========================
+
+class StripeInitiateRequest(BaseModel):
+    order_id: int
+    callback_url: str
+    shipping: ShippingInfo
+
+
+class StripePaymentResponse(BaseModel):
+    data: Dict[str, Any]
+
+
+class StripeWebhook(BaseModel):
+    type: str
+    data: Dict[str, Any]

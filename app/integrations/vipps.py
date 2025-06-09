@@ -5,6 +5,9 @@ Modul for å håndtere betaling via Vipps.
 Husk å fylle ut miljøvariabler i .env og oppdatere URL-er om du går til produksjon.
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import requests
 from typing import Dict, Any
@@ -24,16 +27,19 @@ class VippsClient:
         else:
             self.base_url = VIPPS_PRODUCTION_URL
         self.access_token = None
-        self._authenticate()
+        # defer authentication until needed
 
     def _authenticate(self):
         """
         Autentiser mot Vipps for å hente tilgangstoken.
         """
+        # Ensure credentials configured
+        if not VIPPS_CLIENT_ID or not VIPPS_CLIENT_SECRET:
+            raise Exception("Missing VIPPS_CLIENT_ID or VIPPS_CLIENT_SECRET in environment configuration")
         auth_url = f"{self.base_url}/accesstoken/get"
         payload = {
-            "client_id": VIPPS_CLIENT_ID,
-            "client_secret": VIPPS_CLIENT_SECRET
+            "clientId": VIPPS_CLIENT_ID,
+            "clientSecret": VIPPS_CLIENT_SECRET
         }
         headers = {
             "Content-Type": "application/json"

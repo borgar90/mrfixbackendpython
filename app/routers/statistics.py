@@ -23,14 +23,14 @@ router = APIRouter(
 @router.get("/sales/{year}", response_model=List[MonthlySales], dependencies=[Depends(get_current_admin)])
 def read_monthly_sales(year: int, db: Session = Depends(get_db)):
     """
-    Hent total salg per måned for et spesifikt år (kun admin).
+    Get total sales per month for a specific year (only paid orders) (admin only).
     """
     return get_monthly_sales(db, year)
 
 @router.get("/unprocessed_orders", response_model=List[UnprocessedOrder], dependencies=[Depends(get_current_admin)])
 def read_unprocessed_orders(db: Session = Depends(get_db)):
     """
-    Hent alle ubearbeidede ordrer (status 'pending') (kun admin).
+    Get all orders that have been successfully paid but not yet shipped (admin only).
     """
     return get_unprocessed_orders(db)
 

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from .. import crud, schemas
+from .. import crud, schemas, models
 from ..database import get_db
 from ..auth import get_current_user
 
@@ -12,8 +12,12 @@ router = APIRouter(
     tags=["crm"]
 )
 
-@router.post("/notes", response_model=schemas.CRMNoteRead, status_code=201, dependencies=[Depends(get_current_user)])
-def create_note(note_in: schemas.CRMNoteCreate, db: Session = Depends(get_db)):
+@router.post("/notes", response_model=schemas.CRMNoteRead, status_code=201)
+def create_note(
+    note_in: schemas.CRMNoteCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Opprett et CRM-notat for en kunde.
     """
@@ -24,8 +28,12 @@ def create_note(note_in: schemas.CRMNoteCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Customer not found")
     return crud.create_crm_note(db, note_in)
 
-@router.get("/notes/{customer_id}", response_model=List[schemas.CRMNoteRead], dependencies=[Depends(get_current_user)])
-def read_notes(customer_id: int, db: Session = Depends(get_db)):
+@router.get("/notes/{customer_id}", response_model=List[schemas.CRMNoteRead])
+def read_notes(
+    customer_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Hent alle CRM-notater for en gitt kunde.
     """

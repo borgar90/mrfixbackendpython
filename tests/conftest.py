@@ -61,6 +61,16 @@ def client():
 def reset_database():
     Base.metadata.drop_all(bind=engine_test)
     Base.metadata.create_all(bind=engine_test)
+    # Seed default admin with valid email for test database
+    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@example.com")
+    from app.models import User
+    from app.schemas import UserRole
+    from app.crud.users import pwd_context
+    db = TestingSessionLocal()
+    admin_hashed = pwd_context.hash("adminpass")
+    db.add(User(email=ADMIN_EMAIL, hashed_password=admin_hashed, role=UserRole.admin.value))
+    db.commit()
+    db.close()
     yield
 
 @pytest.fixture(scope="session")
@@ -79,7 +89,7 @@ def admin_token(client):
 def admin_headers(admin_token):
     return {"Authorization": f"Bearer {admin_token}"}
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def user_token(client):
     # Register a test customer user
     payload = {"email": "cust@example.com", "password": "custpass", "role": "customer"}
@@ -95,6 +105,6 @@ def user_token(client):
     assert response.status_code == 200
     return response.json()["access_token"]
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def user_headers(user_token):
     return {"Authorization": f"Bearer {user_token}"}

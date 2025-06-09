@@ -63,6 +63,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         token_data = TokenData(username=username, role=role)
     except JWTError:
         raise credentials_exception
+    # Special-case default admin user: fetch actual admin from DB
+    if token_data.username == "admin" and token_data.role == UserRole.admin.value:
+        user = get_user_by_email(db, token_data.username)
+        if not user:
+            raise credentials_exception
+        return user
     # Fetch user record from database (including default admin created at startup)
     user = get_user_by_email(db, token_data.username)
     if not user:

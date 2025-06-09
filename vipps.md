@@ -21,22 +21,32 @@ FastAPI will load these at startup and authenticate with Vipps automatically.
 
 ## Backend Endpoints
 
-### Initiate Payment
+### Initiate Vipps Payment
 
-**POST** `/orders/{order_id}/pay`
+**POST** `/payment/vipps/initiate`
 - Auth: Bearer JWT (customer)
 - Request body (JSON):
   ```json
   {
-    "callback_url": "https://your-frontend.com/vipps-result"
+    "order_id": 123,
+    "callback_url": "https://your-frontend.com/vipps-result",
+    "shipping": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john@example.com",
+      "address": "123 Main St",
+      "city": "Oslo",
+      "postal_code": "0123",
+      "country": "Norway",
+      "phone": "+4712345678"
+    }
   }
   ```
 - Response (JSON):
   ```json
   {
     "data": {
-      // Raw Vipps API response, for example:
       "orderId": "123",
       "paymentId": "abcde12345",
       "status": "CREATED",
-      "url": "https://apitest.vipps.no/payments/...",
+      "url": "https://apitest.vipps.no/payments/...

@@ -109,8 +109,7 @@ Below is an overview of all available endpoints in the Webshop API, including HT
 | POST   | `/orders/`                       | Place a new order                   | Authenticated  |
 | PUT    | `/orders/{id}/status`            | Update order status                 | Admin only     |
 | DELETE | `/orders/{id}`                   | Delete order (restores stock)       | Admin only     |
-| POST   | `/orders/{order_id}/pay`             | Initiate Vipps payment for an order | Authenticated  |
-| POST   | `/orders/{order_id}/callback`        | Handle Vipps payment status callback | Public         |
+| POST   | `/orders/{order_id}/callback`    | Handle Vipps payment status callback | Public         |
 
 ### Order Endpoints Explained
 - **GET `/orders/`**: Retrieves all orders for the authenticated user with pagination.
@@ -118,7 +117,6 @@ Below is an overview of all available endpoints in the Webshop API, including HT
 - **POST `/orders/`**: Places a new order by specifying `customer_id` and `items` array; returns created order.
 - **PUT `/orders/{id}/status`**: Updates order status (e.g., to shipped or canceled). Admin-only.
 - **DELETE `/orders/{id}`**: Deletes an order and restores product stock. Admin-only.
-- **POST `/orders/{order_id}/pay`**: Initiates a Vipps payment flow for a pending order; returns the PaymentResponse payload.
 - **POST `/orders/{order_id}/callback`**: Endpoint for Vipps to notify payment status changes; updates order status accordingly.
 
 ## CRM Notes
@@ -150,6 +148,12 @@ Below is an overview of all available endpoints in the Webshop API, including HT
 - **GET `/statistics/paid_unprocessed_count`**: Returns the count of orders paid but not yet processed.
 - **GET `/statistics/total_orders`**: Returns the total count of all orders placed.
 - **GET `/statistics/total_revenue`**: Returns the sum of `total_amount` from orders with a `paid` status.
+
+## Payment
+
+| Method | Path                       | Description                                   | Auth          |
+|--------|----------------------------|-----------------------------------------------|---------------|
+| POST   | `/payment/vipps/initiate`  | Initiate a Vipps payment for a pending order  | Authenticated |
 
 ---
 Generated on: June 8, 2025

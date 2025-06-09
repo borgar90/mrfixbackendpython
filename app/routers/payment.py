@@ -1,0 +1,144 @@
+
+# filepath: app/routers/payment.py
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.orm import Session
+from ..database import get_db
+from ..auth import get_current_user
+from ..integrations.vipps import VippsClient, VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET
+from ..integrations.stripe import StripeClient, STRIPE_SECRET_KEY
+from .. import crud, schemas
+
+# Vipps payment router
+vipps_router = APIRouter(
+    prefix="/payment/vipps",
+    tags=["payment", "vipps"]
+)
+
+# Stripe payment router
+stripe_router = APIRouter(
+    prefix="/payment/stripe",
+    tags=["payment", "stripe"]
+)
+
+# Main payment router that includes both sub-routers
+router = APIRouter()
+
+@vipps_router.post("/initiate", response_model=schemas.VippsPaymentResponse, dependencies=[Depends(get_current_user)])
+def vipps_initiate(request: schemas.VippsInitiateRequest, db: Session = Depends(get_db)):
+    """
+    Initiate a Vipps payment for a pending order via separate payment endpoint.
+    """
+    # Verify Vipps environment variables
+    if not VIPPS_CLIENT_ID or not VIPPS_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=500,
+            detail="Vipps credentials not configured; set VIPPS_CLIENT_ID and VIPPS_CLIENT_SECRET"
+        )
+    
+    order = crud.get_order(db, request.order_id)
+    print(f"Initiating Vipps payment for order {request.order_id}")
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status != schemas.OrderStatus.pending.value:
+        raise HTTPException(status_code=400, detail="Order is not pending payment")
+    if order.total_amount < 20.0:
+        raise HTTPException(status_code=400, detail="Order amount must be at least 20 NOK")
+    
+    # Add shipping cost (80 NOK) to the total amount
+    shipping_cost = 80.0
+    total_amount_with_shipping = order.total_amount + shipping_cost
+    
+    vipps = VippsClient(sandbox=True)
+    try:
+        result = vipps.create_payment(
+            order_id=request.order_id,
+            amount=total_amount_with_shipping,
+            callback_url=request.callback_url,
+            shipping=request.shipping.dict()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"data": result}
+
+
+@stripe_router.post("/initiate", response_model=schemas.StripePaymentResponse, dependencies=[Depends(get_current_user)])
+def stripe_initiate(request: schemas.StripeInitiateRequest, db: Session = Depends(get_db)):
+    """
+    Initiate a Stripe payment for a pending order via separate payment endpoint.
+    """
+    # Verify Stripe environment variables
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="Stripe credentials not configured; set STRIPE_SK environment variable"
+        )
+    
+    order = crud.get_order(db, request.order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status != schemas.OrderStatus.pending.value:
+        raise HTTPException(status_code=400, detail="Order is not pending payment")
+    if order.total_amount < 20.0:
+        raise HTTPException(status_code=400, detail="Order amount must be at least 20 NOK")
+    
+    # Add shipping cost (80 NOK) to the total amount
+    shipping_cost = 80.0
+    total_amount_with_shipping = order.total_amount + shipping_cost
+    
+    stripe_client = StripeClient()
+    try:
+        result = stripe_client.create_payment_intent(
+            order_id=request.order_id,
+            amount=total_amount_with_shipping,
+            callback_url=request.callback_url,
+            shipping=request.shipping.dict()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"data": result}
+
+
+@stripe_router.post("/webhook")
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Handle Stripe webhook events for payment status updates.
+    """
+    import json
+    
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature')
+    
+    try:
+        # In production, you should verify the webhook signature
+        # For now, we'll just parse the JSON payload
+        event = json.loads(payload)
+        
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            order_id = session['metadata'].get('order_id')
+            
+            if order_id:
+                # Update order status to paid
+                db_order = crud.update_order_status(db, int(order_id), schemas.OrderStatus.paid.value)
+                if not db_order:
+                    raise HTTPException(status_code=404, detail="Order not found")
+                    
+        elif event['type'] == 'checkout.session.expired':
+            session = event['data']['object']
+            order_id = session['metadata'].get('order_id')
+            
+            if order_id:
+                # Update order status to canceled
+                db_order = crud.update_order_status(db, int(order_id), schemas.OrderStatus.canceled.value)
+                
+        return {"status": "success"}
+        
+    except Exception as e:
+        print(f"Stripe webhook error: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid webhook payload")
+
+
+# Include both routers
+router.include_router(vipps_router)
+router.include_router(stripe_router)

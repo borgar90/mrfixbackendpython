@@ -1,0 +1,12 @@
+site_name: Webshop API Documentation
+site_description: Comprehensive reference and guides for the Webshop API backend.
+docs_dir: .
+nav:
+  - Home: README.md
+  - Endpoint Descriptions: EndpointDescription.md
+  - Orders Explanation: ordersexplination.md
+  - Vipps Integration: vipps.md
+  - Admin Guide: howtoadmin.md
+  - Security Analysis: securityrisk.md
+plugins:
+  - search

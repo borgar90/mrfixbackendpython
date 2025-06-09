@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from .database import engine, Base, get_db, SessionLocal
 from sqlalchemy.orm import Session
 from .routers import customers, products, orders, crm, users, statistics
+from .routers.payment import router as payment_router  # Import payment router directly to avoid attribute error
 from .auth import authenticate_user, create_access_token
 from .schemas import Token, UserRole
 from .database import SessionLocal
@@ -14,6 +15,12 @@ from .crud.users import pwd_context
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin")
 
 # Lifespan context: create default admin on startup
 @asynccontextmanager
@@ -21,10 +28,10 @@ async def lifespan(app: FastAPI):
     """Ensure default admin user exists before the app starts."""
     db = SessionLocal()
     try:
-        if not db.query(User).filter(User.email == "admin").first():
+        if not db.query(User).filter(User.email == ADMIN_EMAIL).first():
             hashed = pwd_context.hash("adminpass")
             db_user = User(
-                email="admin",
+                email=ADMIN_EMAIL,
                 hashed_password=hashed,
                 role=UserRole.admin.value
             )
@@ -89,6 +96,8 @@ app.include_router(orders.router)
 app.include_router(crm.router)
 app.include_router(users.router)
 app.include_router(statistics.router)
+# Include payment router
+app.include_router(payment_router)
 
 # Serve uploaded images
 app.mount(
@@ -111,7 +120,7 @@ def login_for_access_token(
 ):
     # Special-case admin credentials without DB
     if form_data.username == "admin" and form_data.password == "adminpass":
-        token_data = {"sub": "admin", "role": UserRole.admin.value}
+        token_data = {"sub": ADMIN_EMAIL, "role": UserRole.admin.value}
         access_token = create_access_token(data=token_data)
         return {"access_token": access_token, "token_type": "bearer"}
     # Regular user authentication
