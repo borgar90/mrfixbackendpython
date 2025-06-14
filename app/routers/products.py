@@ -133,3 +133,36 @@ def delete_image(product_id: int, image_id: int, db: Session = Depends(get_db)):
         os.remove(path)
     crud.delete_product_image(db, product_id, image_id)
     return
+
+# ==========================
+# Stock management endpoints
+# ==========================
+
+@router.get("/{product_id}/stock", response_model=int)
+def get_stock(product_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieve the stock quantity for a specific product.
+    """
+    stock = crud.products.get_stock(db, product_id=product_id)
+    if stock is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return stock
+
+@router.put("/{product_id}/stock", response_model=schemas.ProductRead)
+def update_stock(product_id: int, quantity: int, db: Session = Depends(get_db)):
+    """
+    Update the stock quantity for a specific product.
+    """
+    product = crud.products.update_stock(db, product_id=product_id, quantity=quantity)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+@router.delete("/{product_id}/stock", status_code=status.HTTP_204_NO_CONTENT)
+def delete_stock(product_id: int, db: Session = Depends(get_db)):
+    """
+    Reset the stock quantity for a specific product to zero.
+    """
+    success = crud.products.delete_stock(db, product_id=product_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Product not found")

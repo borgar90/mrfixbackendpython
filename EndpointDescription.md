@@ -100,6 +100,19 @@ Below is an overview of all available endpoints in the Webshop API, including HT
 - **PUT `/products/{id}/images/{image_id}`**: Updates the `is_main` or `is_thumbnail` flags on an image. Admin-only.
 - **DELETE `/products/{id}/images/{image_id}`**: Deletes an image record and removes the file. Admin-only.
 
+## Stock Management
+
+| Method | Path                        | Description                                | Auth       |
+|--------|-----------------------------|--------------------------------------------|------------|
+| GET    | `/products/{product_id}/stock` | Retrieve the stock quantity for a product | Admin only |
+| PUT    | `/products/{product_id}/stock` | Update the stock quantity for a product   | Admin only |
+| DELETE | `/products/{product_id}/stock` | Reset the stock quantity for a product    | Admin only |
+
+### Stock Management Endpoints Explained
+- **GET `/products/{product_id}/stock`**: Returns the current stock quantity for the specified product.
+- **PUT `/products/{product_id}/stock`**: Updates the stock quantity for the specified product. Requires a JSON body with `quantity`.
+- **DELETE `/products/{product_id}/stock`**: Resets the stock quantity for the specified product to zero.
+
 ## Orders
 
 | Method | Path                             | Description                         | Auth           |

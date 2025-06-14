@@ -36,6 +36,7 @@ from .customers import (
     create_customer,
     update_customer,
     delete_customer,
+    get_customer_with_orders,
 )
 from .users import (
     get_user_by_email,

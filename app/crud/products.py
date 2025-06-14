@@ -119,3 +119,32 @@ def delete_product_image(db: Session, product_id: int, image_id: int) -> None:
     if db_image:
         db.delete(db_image)
         db.commit()
+
+def get_stock(db: Session, product_id: int) -> int:
+    """
+    Retrieve the stock quantity for a specific product.
+    """
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    return product.stock if product else None
+
+def update_stock(db: Session, product_id: int, quantity: int) -> models.Product:
+    """
+    Update the stock quantity for a specific product.
+    """
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if product:
+        product.stock = quantity
+        db.commit()
+        db.refresh(product)
+    return product
+
+def delete_stock(db: Session, product_id: int) -> bool:
+    """
+    Reset the stock quantity for a specific product to zero.
+    """
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if product:
+        product.stock = 0
+        db.commit()
+        return True
+    return False

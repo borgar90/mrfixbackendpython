@@ -56,13 +56,16 @@ def pay_order(
         raise HTTPException(status_code=404, detail="Order not found")
     if order.status != schemas.OrderStatus.pending.value:
         raise HTTPException(status_code=400, detail="Order is not pending payment")
-    # Create Vipps payment
+    # Create Vipps payment with shipping cost
+    shipping_cost = 80.0
+    total_amount = order.total_amount + shipping_cost
     vipps = VippsClient(sandbox=True)
     try:
         result = vipps.create_payment(
             order_id=order_id,
-            amount=order.total_amount,
-            callback_url=payment_req.callback_url
+            amount=total_amount,
+            callback_url=payment_req.callback_url,
+            shipping=payment_req.shipping.dict()
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

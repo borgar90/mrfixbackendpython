@@ -17,7 +17,7 @@ import app.models as _models
 # ---------------------------------------------------------------
 
 # Bruk en SQLite in-memory DB for testing, slik at vi ikke polutterer produksjons-DB
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
+SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///testdb.sqlite"
 
 # Opprett en egen engine for tests
 engine_test = create_engine(
@@ -62,7 +62,7 @@ def reset_database():
     Base.metadata.drop_all(bind=engine_test)
     Base.metadata.create_all(bind=engine_test)
     # Seed default admin with valid email for test database
-    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@example.com")
+    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin")
     from app.models import User
     from app.schemas import UserRole
     from app.crud.users import pwd_context
@@ -108,3 +108,12 @@ def user_token(client):
 @pytest.fixture
 def user_headers(user_token):
     return {"Authorization": f"Bearer {user_token}"}
+
+@pytest.fixture
+def headers():
+    """
+    Provide default headers for tests.
+    """
+    return {
+        "Authorization": "Bearer test-token"
+    }

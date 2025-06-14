@@ -31,8 +31,8 @@ def verify_password(plain_password, hashed_password):
 def authenticate_user(db: Session, username: str, password: str):
     # Special-case default admin login
     if username == "admin" and password == "adminpass":
-        # Return a dummy User model with admin role
         return models.User(email="admin", hashed_password="", role=UserRole.admin.value)
+
     # Regular DB lookup
     user = get_user_by_email(db, username)
     if not user or not verify_password(password, user.hashed_password):
@@ -48,7 +48,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Decode JWT token to retrieve current user."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -63,13 +64,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         token_data = TokenData(username=username, role=role)
     except JWTError:
         raise credentials_exception
-    # Special-case default admin user: fetch actual admin from DB
-    if token_data.username == "admin" and token_data.role == UserRole.admin.value:
-        user = get_user_by_email(db, token_data.username)
-        if not user:
-            raise credentials_exception
-        return user
-    # Fetch user record from database (including default admin created at startup)
     user = get_user_by_email(db, token_data.username)
     if not user:
         raise credentials_exception

@@ -1,7 +1,7 @@
 # app/crud/customers.py
 
 import uuid
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from .. import models, schemas
 from .users import create_user as create_user_crud
@@ -71,3 +71,18 @@ def delete_customer(db: Session, customer_id: int) -> None:
     if db_customer:
         db.delete(db_customer)
         db.commit()
+
+def get_customer_with_orders(db: Session, customer_id: int) -> models.Customer:
+    """
+    Fetch a customer and their orders (with items and full product details) by customer ID.
+    """
+    return (
+        db.query(models.Customer)
+        .options(
+            joinedload(models.Customer.orders)
+            .joinedload(models.Order.items)
+            .joinedload(models.OrderItem.product)
+        )
+        .filter(models.Customer.id == customer_id)
+        .first()
+    )

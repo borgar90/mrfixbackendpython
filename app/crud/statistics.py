@@ -4,7 +4,7 @@ from sqlalchemy import extract, func
 from typing import List, Tuple
 
 from .. import models
-from ..schemas import OrderStatus
+from ..schemas import OrderStatus, MonthlySales
 
 
 def get_monthly_sales(db: Session, year: int) -> List[Tuple[int, float]]:
@@ -23,8 +23,8 @@ def get_monthly_sales(db: Session, year: int) -> List[Tuple[int, float]]:
         .order_by('month')
         .all()
     )
-    # Convert SQLAlchemy Row objects to simple tuples
-    return [(int(month), float(total)) for month, total in results]
+    # Convert results into MonthlySales schema instances
+    return [MonthlySales(month=int(month), total=float(total)) for month, total in results]
 
 
 def get_unprocessed_orders(db: Session) -> List[models.Order]:

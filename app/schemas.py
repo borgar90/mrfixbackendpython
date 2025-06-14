@@ -5,6 +5,15 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, EmailStr, ConfigDict  # add ConfigDict import
 from enum import Enum  # new import
 
+# Define order status enum
+class OrderStatus(str, Enum):
+    pending = "pending"
+    paid = "paid"
+    shipped = "shipped"
+    canceled = "canceled"
+    refunded = "refunded"
+
+
 # ==========================
 # CRM-schemas
 # ==========================
@@ -42,6 +51,7 @@ class CustomerRead(CustomerBase):
     id: int
     created_at: datetime
     notes: List[CRMNoteRead] = []
+    orders: List["CustomerOrderRead"] = []  # Include customer's orders
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -85,16 +95,20 @@ class OrderItemCreate(OrderItemBase):
 class OrderItemRead(OrderItemBase):
     id: int
     price: float
+    product: ProductRead  # Include full product details
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class OrderStatus(str, Enum):  # new enum
-    pending = "pending"
-    paid = "paid"
-    shipped = "shipped"
-    canceled = "canceled"
-    refunded = "refunded"
+# Schema used for including orders under a customer without causing a recursive customer field
+class CustomerOrderRead(BaseModel):
+    id: int
+    total_amount: float
+    status: "OrderStatus"
+    created_at: datetime
+    items: List[OrderItemRead]
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderBase(BaseModel):
@@ -111,6 +125,7 @@ class OrderRead(OrderBase):
     status: OrderStatus  # constrained to valid statuses
     created_at: datetime
     items: List[OrderItemRead]
+    customer: CustomerRead  # Include customer details
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -134,6 +149,7 @@ class TokenData(BaseModel):
 class UserRole(str, Enum):
     admin = "admin"
     customer = "customer"
+    user = "user"
 
 
 # ==========================
@@ -189,6 +205,8 @@ class UnprocessedOrder(  # for clarity, reuse OrderRead schema for full order da
     total_amount: float
     status: OrderStatus
     created_at: datetime
+    customer: CustomerRead  # full customer details
+    items: List[OrderItemRead]  # include order lines with product details
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -52,9 +52,15 @@ def create_order(db: Session, order_in: schemas.OrderCreate) -> models.Order:
 
 def get_order(db: Session, order_id: int) -> models.Order:
     """
-    Hent en ordre basert på ID.
+    Hent en ordre basert på ID, inkludert kunde- og brukerdetaljer.
     """
-    return db.query(models.Order).filter(models.Order.id == order_id).first()
+    return (
+        db.query(models.Order)
+        .join(models.Customer, models.Order.customer_id == models.Customer.id)
+        .join(models.User, models.Customer.user_id == models.User.id)
+        .filter(models.Order.id == order_id)
+        .first()
+    )
 
 def get_orders(db: Session, skip: int = 0, limit: int = 100) -> List[models.Order]:
     """

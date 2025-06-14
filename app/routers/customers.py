@@ -93,3 +93,14 @@ def delete_own_customer(
     # GDPR: delete personal data
     crud.delete_customer(db, customer.id)
     return
+
+# Admin-only: read a customer with their orders and product details
+@router.get("/{customer_id}/orders", response_model=schemas.CustomerRead, dependencies=[Depends(get_current_admin)])
+def read_customer_with_orders(customer_id: int, db: Session = Depends(get_db)):
+    """
+    Fetch a customer and all their orders (including items and full product details).
+    """
+    db_customer = crud.get_customer_with_orders(db, customer_id)
+    if not db_customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    return db_customer

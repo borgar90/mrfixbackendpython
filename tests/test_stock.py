@@ -83,3 +83,28 @@ def test_order_decrements_and_delete_restores_stock(client, user_headers, admin_
     resp2 = client.get(f"/products/{prod_id}")
     assert resp2.status_code == 200
     assert resp2.json()["stock"] == 8
+
+
+def test_get_stock(client, headers):
+    product_id, _ = create_product(client, headers)
+    resp = client.get(f"/products/{product_id}/stock", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json() == 10
+
+
+def test_update_stock(client, headers):
+    product_id, _ = create_product(client, headers)
+    new_stock = 20
+    resp = client.put(f"/products/{product_id}/stock", json={"quantity": new_stock}, headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["stock"] == new_stock
+
+
+def test_delete_stock(client, headers):
+    product_id, _ = create_product(client, headers)
+    resp = client.delete(f"/products/{product_id}/stock", headers=headers)
+    assert resp.status_code == 204
+    # Verify stock reset
+    resp = client.get(f"/products/{product_id}/stock", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json() == 0
